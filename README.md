@@ -64,3 +64,11 @@ Layers must be named (case-insensitive) according to the following rules:
 | CrtYd               | F.CrtYd, B.CrtYd | --           | Yes          |
 
 Note: If you have a layer "Cu", all of its sub-layers will be treated as "Cu" regardless of their names.
+
+### Adobe Illustrator
+
+Illustrator SVGs also work, with a couple of things to watch for:
+ * **Use top-level Layers, not Groups, for the KiCad layer mapping.** Illustrator writes each layer's name to the group's `id` attribute (e.g. `<g id="Cu">`), which svg2mod reads when no Inkscape `inkscape:label` is present.  Name each layer exactly per the table above (`Cu`, `SilkS`, `Mask`, ...).  Grouped (as opposed to layered) elements export with auto-generated ids and will not be mapped.
+   * For exposed copper, place a copy of the artwork on both a `Cu` layer and a `Mask` layer.
+ * **Export with "Responsive" unchecked** (File -> Export -> Export As -> SVG).  Responsive strips the `width`/`height` attributes and leaves only a `viewBox`; without physical dimensions svg2mod cannot establish scale and collapses every path to the origin.  With Responsive off, Illustrator writes `width`/`height` in real units (e.g. `mm`).
+ * svg2mod measures path centerlines and ignores `stroke-width`, so the exported module is slightly smaller than Illustrator's stroked artboard.  Use `--factor` to hit an exact final size.

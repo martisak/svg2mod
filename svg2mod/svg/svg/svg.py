@@ -261,12 +261,17 @@ class Group(Transformable):
         
         self.name = ""
         if elt is not None:
-            
-            for id, value in elt.attrib.iteritems():
+
+            for id, value in elt.attrib.items():
 
                 id = self.parse_name( id )
                 if id[ "name" ] == "label":
                     self.name = value
+
+            # Fall back to the group's id (e.g. Illustrator exports layer
+            # names as <g id="..."> rather than inkscape:label).
+            if self.name == "":
+                self.name = elt.get( "id", "" )
 
     @staticmethod
     def parse_name( tag ):

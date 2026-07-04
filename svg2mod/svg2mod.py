@@ -481,6 +481,8 @@ class Svg2ModExport( object ):
             for property in item.style.split( ";" ):
 
                 nv = property.split( ":" );
+                if len( nv ) < 2:
+                    continue
                 name = nv[ 0 ].strip()
                 value = nv[ 1 ].strip()
 
@@ -553,7 +555,7 @@ class Svg2ModExport( object ):
         if items is None:
 
             self.layers = {}
-            for name in self.layer_map.iterkeys():
+            for name in self.layer_map:
                 self.layers[ name ] = None
 
             items = self.imported.svg.items
@@ -564,7 +566,7 @@ class Svg2ModExport( object ):
             if not isinstance( item, svg.Group ):
                 continue
 
-            for name in self.layers.iterkeys():
+            for name in self.layers:
                 #if re.search( name, item.name, re.I ):
                 if name == item.name:
                     print( "Found SVG layer: {}".format( item.name ) )
@@ -653,7 +655,7 @@ class Svg2ModExport( object ):
             front,
         )
 
-        for name, group in self.layers.iteritems():
+        for name, group in self.layers.items():
 
             if group is None: continue
 
@@ -1094,7 +1096,7 @@ class Svg2ModExportLegacyUpdater( Svg2ModExportLegacy ):
 
         # Write index:
         for module_name in sorted(
-            self.loaded_modules.iterkeys(),
+            self.loaded_modules,
             key = str.lower
         ):
             self.output_file.write( module_name + "\n" )
@@ -1111,7 +1113,7 @@ class Svg2ModExportLegacyUpdater( Svg2ModExportLegacy ):
             up_to = up_to.lower()
 
         for module_name in sorted(
-            self.loaded_modules.iterkeys(),
+            self.loaded_modules,
             key = str.lower
         ):
             if up_to is not None and module_name.lower() >= up_to:
