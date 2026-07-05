@@ -18,7 +18,7 @@ def main():
 
     args, parser = get_arguments()
 
-    pretty = args.format == 'pretty'
+    pretty = args.format in ( 'pretty', 'kicad6' )
     use_mm = args.units == 'mm'
 
     if pretty:
@@ -57,7 +57,11 @@ def main():
 
     # Create an exporter:
     if pretty:
-        exported = Svg2ModExportPretty(
+        if args.format == 'kicad6':
+            exporter_class = Svg2ModExportKicad6
+        else:
+            exporter_class = Svg2ModExportPretty
+        exported = exporter_class(
             imported,
             args.output_file_name,
             args.scale_factor,
@@ -1341,6 +1345,104 @@ class Svg2ModExportPretty( Svg2ModExport ):
 
 #----------------------------------------------------------------------------
 
+class Svg2ModExportKicad6( Svg2ModExportPretty ):
+
+    #------------------------------------------------------------------------
+
+    def _get_layer_name( self, name, front ):
+
+        if front:
+            return '"{}"'.format( self.layer_map[ name ].format( "F" ) )
+        else:
+            return '"{}"'.format( self.layer_map[ name ].format( "B" ) )
+
+
+    #------------------------------------------------------------------------
+
+    def _write_library_intro( self ):
+
+        self.output_file.write( """(footprint "{0}"
+  (version {1})
+  (generator "svg2mod")
+  (layer "F.Cu")
+  (descr "{2}")
+  (tags "{3}")
+  (attr smd)
+""".format(
+    self.imported.module_name, #0
+    datetime.date.today().strftime( "%Y%m%d" ), #1
+    "Imported from {}".format( self.imported.file_name ), #2
+    "svg2mod", #3
+)
+        )
+
+
+    #------------------------------------------------------------------------
+
+    def _write_module_header(
+        self,
+        label_size,
+        label_pen,
+        reference_y,
+        value_y,
+        front,
+    ):
+        if front:
+            side = "F"
+        else:
+            side = "B"
+
+        self.output_file.write(
+"""  (fp_text reference {0} (at 0 {1}) (layer "{2}.SilkS") hide
+    (effects (font (size {3} {3}) (thickness {4})))
+  )
+  (fp_text value {5} (at 0 {6}) (layer "{2}.SilkS") hide
+    (effects (font (size {3} {3}) (thickness {4})))
+  )""".format(
+
+    self._get_module_name(), #0
+    reference_y, #1
+    side, #2
+    label_size, #3
+    label_pen, #4
+    self.imported.module_value, #5
+    value_y, #6
+)
+        )
+
+
+    #------------------------------------------------------------------------
+
+    def _write_polygon_footer( self, layer, stroke_width ):
+
+        self.output_file.write(
+            "    )\n    (stroke (width {1}) (type solid))\n    (fill solid)\n    (layer {0})\n  )".format(
+                layer, stroke_width
+            )
+        )
+
+
+    #------------------------------------------------------------------------
+
+    def _write_polygon_segment( self, p, q, layer, stroke_width ):
+
+        self.output_file.write(
+            """\n  (fp_line
+    (start {} {})
+    (end {} {})
+    (stroke (width {}) (type solid))
+    (layer {})
+  )""".format(
+    p.x, p.y,
+    q.x, q.y,
+    stroke_width,
+    layer,
+)
+        )
+
+
+#----------------------------------------------------------------------------
+
 def get_arguments():
 
     parser = argparse.ArgumentParser(
@@ -1418,8 +1520,8 @@ def get_arguments():
         type = str,
         dest = 'format',
         metavar = 'FORMAT',
-        choices = [ 'legacy', 'pretty' ],
-        help = "output module file format (legacy|pretty)",
+        choices = [ 'legacy', 'pretty', 'kicad6' ],
+        help = "output module file format (legacy|pretty|kicad6)",
         default = 'pretty',
     )
 
