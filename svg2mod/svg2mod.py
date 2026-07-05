@@ -18,7 +18,7 @@ def main():
 
     args, parser = get_arguments()
 
-    pretty = args.format == 'pretty'
+    pretty = args.format in ( 'pretty', 'kicad6' )
     use_mm = args.units == 'mm'
 
     if pretty:
@@ -57,7 +57,11 @@ def main():
 
     # Create an exporter:
     if pretty:
-        exported = Svg2ModExportPretty(
+        if args.format == 'kicad6':
+            exporter_class = Svg2ModExportKicad6
+        else:
+            exporter_class = Svg2ModExportPretty
+        exported = exporter_class(
             imported,
             args.output_file_name,
             args.scale_factor,
@@ -1516,8 +1520,8 @@ def get_arguments():
         type = str,
         dest = 'format',
         metavar = 'FORMAT',
-        choices = [ 'legacy', 'pretty' ],
-        help = "output module file format (legacy|pretty)",
+        choices = [ 'legacy', 'pretty', 'kicad6' ],
+        help = "output module file format (legacy|pretty|kicad6)",
         default = 'pretty',
     )
 
